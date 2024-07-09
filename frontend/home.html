@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library - Home</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">Library</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="home.html">Books</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="customers.html">Customers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="loans.html">Loans</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="welcome text-center my-4">
+            <h1>Welcome to the Library</h1>
+            <p>Explore our collection of books below</p>
+        </div>
+        <div class="row" id="book-list"></div>
+    </div>
+    <script>
+        const SERVER = 'http://127.0.0.1:5000';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            getBooks();
+        });
+
+        function getBooks() {
+            axios.get(`${SERVER}/home`)
+                .then(function (response) {
+                    const bookList = document.getElementById('book-list');
+                    bookList.innerHTML = '';
+                    response.data.forEach(function (book) {
+                        const bookCard = document.createElement('div');
+                        bookCard.classList.add('col-md-4', 'mb-4');
+                        bookCard.innerHTML = `
+                            <div class="card h-100">
+                                <img class="card-img-top" src="${book.img}" alt="${book.name}">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">${book.name}</h5>
+                                    <p class="card-text">Author: ${book.author}</p>
+                                    <p class="card-text">Year: ${book.year_published}</p>
+                                    <p class="card-text">Type: ${book.type}</p>
+                                    ${book.on_loan ? `<p class="card-text text-danger">Book is currently on loan. Return date: ${book.return_date}</p>` : `<button class="btn btn-primary" onclick="rentBook(${book.id})">Rent Book</button>`}
+                                </div>
+                            </div>
+                        `;
+                        bookList.appendChild(bookCard);
+                    });
+                })
+                .catch(function (error) {
+                    alert('Error fetching books: ' + error.message);
+                });
+        }
+
+        function rentBook(bookId) {
+            const accessToken = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            if (!accessToken) {
+                alert('Please login to rent a book');
+                return;
+            }
+
+            axios.post(`${SERVER}/add_loan`, {
+                book_id: bookId
+            }, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            })
+                .then(function (response) {
+                    alert('Book rented successfully');
+                    window.location.href = 'home.html';
+                })
+                .catch(function (error) {
+                    alert('Error renting book: ' + error.response.data.error);
+                });
+        }
+    </script>
+</body>
+</html>
